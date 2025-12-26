@@ -1,5 +1,5 @@
 pipeline {
-  agent : any
+  agent any
   stages {
     stage('Checkout') {
       steps {
@@ -12,19 +12,32 @@ pipeline {
         sh 'echo passed'
       }
     }
+
     stage('Static Code Analysis') {
       steps {
         sh 'echo passed'
       }
     }
+
     stage('Build and Push Docker Image') {
       steps {
         sh 'echo passed'
       }
     }
+
     stage('Update Deployment File') {
-    steps {
-        sh 'echo passed'
+        steps {
+            sh 'echo passed'
+        }
     }
+  }
+
+  post {
+      success {
+          echo 'Pipeline completed successfully!'
+      }
+      failure {
+          echo 'Pipeline failed. Check the console output.'
+      }
   }
 }
