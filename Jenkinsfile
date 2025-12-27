@@ -80,15 +80,27 @@ pipeline {
         GIT_USER_NAME = "3034saurabhkumar"
       }
       steps {
-        withCredentials([string(credentialsId: 'github-release-creds', variable: 'GITHUB_TOKEN')]) {
+        withCredentials([usernamePassword(credentialsId: 'github-release-creds', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GITHUB_TOKEN'
+        )]) {
           sh '''
-              git config user.email "saurabhkumar3034@gmail.com"
-              git config user.name "Saurabh Kumar"
-              BUILD_NUMBER=${params.RELEASE_VERSION}
-              sed -i "s/replaceImageTag/${params.RELEASE_VERSION}/g" deployment.yml
-              git add deployment.yml
-              git commit -m "Update deployment image to version ${params.RELEASE_VERSION}"
-              git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
+            set -e
+
+            cho "📥 Cloning deployment repository..."
+            rm -rf deploy-repo
+            git clone https://${GIT_USERNAME}:${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git deploy-repo
+
+            cd deploy-repo
+
+            git config user.email "saurabhkumar3034@gmail.com"
+            git config user.name "Saurabh Kumar"
+
+            echo "📝 Updating deployment.yml"
+            sed -i "s/replaceImageTag/${RELEASE_VERSION}/g" deployment.yml
+
+            git add deployment.yml
+            git commit -m "Update image tag to ${RELEASE_VERSION}" || echo "No changes to commit"
+
+            git push origin main
           '''
         }
       }
