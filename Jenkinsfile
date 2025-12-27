@@ -1,59 +1,31 @@
-// def createReleaseBranch(version) {
-//   // Define the name of the new release branch
-//   def releaseBranchName = "release-${version}"
-//   // Define the base branch from which to branch off
-//   def baseBranch = "main"
-//
-//   echo "Checking out ${baseBranch} branch..."
-//   // Checkout the base branch
-//   sh "git checkout ${baseBranch}"
-//   sh "git pull origin ${baseBranch}"
-//
-//   echo "Creating new release branch: ${releaseBranchName}"
-//   // Create a new local branch
-//   sh "git checkout -b ${releaseBranchName}"
-//   // Push the new branch to the remote repository
-//   sh "git push origin ${releaseBranchName}"
-//   echo "Successfully created and pushed ${releaseBranchName}"
-// }
-
 pipeline {
   agent any
 
-  environment {
-    // Define your release branch name dynamically
-    RELEASE_BRANCH = "release-${env.BUILD_NUMBER}"
-    DOCKER_IMAGE = "my-app-image"
+  parameters {
+    string(name: 'RELEASE_VERSION', defaultValue: '1.0.0', description: 'Enter the release version (e.g., 1.0.1)')
   }
 
-  // Example parameter to pass the new version number
-  // parameters {
-  //   string(name: 'RELEASE_VERSION', defaultValue: '1.0.0', description: 'The version number for the new release')
-  // }
-
   stages {
-    stage('Checkout') {
+    stage('Checkout & Create Release Branch') {
       steps {
         // This step clones the repo into the workspace. Make sure to select
         // "None" for "Additional Behaviours" in the Jenkins job configuration
         // if you want to manage the branching manually with 'sh' steps.
         // checkout scm
-        sh """
-          git checkout -b ${RELEASE_BRANCH}
-          git push origin ${RELEASE_BRANCH}
-        """
+        withCredentials([gitUsernamePassword(credentialsId: 'github-relaese-creds', gitToolName: 'Default')]) {
+          sh """
+            # Configure git user info (required for committing/tagging)
+            git config user.email "jenkins@example.com"
+            git config user.name "Jenkins CI"
+
+            # Create and push the branch
+            git checkout -b release-${params.RELEASE_VERSION}
+            git push origin release-${params.RELEASE_VERSION}
+          """
+        }
         sh 'echo passed'
       }
     }
-
-    // stage('Create Release Branch') {
-    //   steps {
-    //     script {
-    //         // Call the function to create the branch using the parameter
-    //         createReleaseBranch(params.RELEASE_VERSION)
-    //     }
-    //   }
-    // }
 
     stage('Build and Test') {
       steps {
@@ -75,17 +47,17 @@ pipeline {
 
     stage('Update Deployment File') {
       steps {
-          sh 'echo passed'
+        sh 'echo passed'
       }
     }
   }
 
   post {
     success {
-        echo 'Pipeline completed successfully!'
+      echo 'Pipeline completed successfully!'
     }
     failure {
-        echo 'Pipeline failed. Check the console output.'
+      echo 'Pipeline failed. Check the console output.'
     }
   }
 }
