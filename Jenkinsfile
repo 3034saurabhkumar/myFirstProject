@@ -13,9 +13,9 @@ pipeline {
         }
     }
 
-    stage('Checkout & Create Release Branch') {
+    stage('Create Release Branch') {
       steps {
-        withCredentials([gitUsernamePassword(credentialsId: 'github-relaese-creds', gitToolName: 'Default')]) {
+        withCredentials([gitUsernamePassword(credentialsId: 'github-release-creds', gitToolName: 'Default')]) {
           sh """
             # Configure git user info (required for committing/tagging)
             git config user.email "jenkins@example.com"
@@ -30,8 +30,18 @@ pipeline {
       }
     }
 
-    stage('Build and Test') {
+    stage('Build and Test with Maven') {
+      agent {
+        docker {
+          image 'maven'
+          args '-v $PWD:/workspace -w /workspace'
+        }
+      }
       steps {
+        sh 'mvn clean package -DskipTests'
+        sh 'ls -lh target'
+        // 👇 Save build artifacts
+        stash name: 'jar-artifact', includes: 'target/*.jar'
         sh 'echo passed'
       }
     }
@@ -49,6 +59,9 @@ pipeline {
             REGISTRY_CREDENTIALS = credentials('docker-cred')
         }
           steps {
+            // 🔥 THIS WAS MISSING OR IN WRONG PLACE
+            unstash 'jar-artifact'
+
             script {
                 sh 'docker build -t ${DOCKER_IMAGE} .'
                 def dockerImage = docker.image("${DOCKER_IMAGE}")
@@ -70,10 +83,10 @@ pipeline {
 
   post {
     success {
-      echo 'Pipeline completed successfully!'
+      echo '✅ Pipeline completed successfully!'
     }
     failure {
-      echo 'Pipeline failed. Check the console output.'
+      echo '❌ Pipeline failed. Check the console output.'
     }
   }
 }
