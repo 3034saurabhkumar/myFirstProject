@@ -6,12 +6,15 @@ pipeline {
   }
 
   stages {
+    stage('Prepare Workspace') {
+        steps {
+            cleanWs() // Deletes previous build artifacts and old .git data
+            checkout scm // Fresh clone/fetch of the repo
+        }
+    }
+
     stage('Checkout & Create Release Branch') {
       steps {
-        // This step clones the repo into the workspace. Make sure to select
-        // "None" for "Additional Behaviours" in the Jenkins job configuration
-        // if you want to manage the branching manually with 'sh' steps.
-        // checkout scm
         withCredentials([gitUsernamePassword(credentialsId: 'github-relaese-creds', gitToolName: 'Default')]) {
           sh """
             # Configure git user info (required for committing/tagging)
