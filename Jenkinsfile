@@ -75,8 +75,22 @@ pipeline {
     }
 
     stage('Update Deployment File') {
+      environment {
+        GIT_REPO_NAME = "CI-CD_implementation"
+        GIT_USER_NAME = "3034saurabhkumar"
+      }
       steps {
-        sh 'echo passed'
+        withCredentials([string(credentialsId: 'github-release-creds', variable: 'GITHUB_TOKEN')]) {
+          sh '''
+              git config user.email "saurabhkumar3034@gmail.com"
+              git config user.name "Saurabh Kumar"
+              BUILD_NUMBER=${params.RELEASE_VERSION}
+              sed -i "s/replaceImageTag/${params.RELEASE_VERSION}/g" deployment.yml
+              git add deployment.yml
+              git commit -m "Update deployment image to version ${params.RELEASE_VERSION}"
+              git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
+          '''
+        }
       }
     }
   }
