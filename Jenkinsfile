@@ -47,7 +47,13 @@ pipeline {
     }
 
     stage('Static Code Analysis') {
+      environment {
+        SONAR_URL = "http://localhost:9000"
+      }
       steps {
+        withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
+          sh 'mvn sonar:sonar -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=${SONAR_URL}'
+        }
         sh 'echo passed'
       }
     }
